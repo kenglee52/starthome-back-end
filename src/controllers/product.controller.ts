@@ -7,6 +7,7 @@ import { ProductType } from "../models/product_type.model";
 import { Owner } from "../models/owner.model";
 import { Currency } from "../models/currency.model";
 import fs from "fs";
+import { uploadToS3 } from "../middleware/uploads";
 
 export const getProductAutoId = async (req: Request, res: Response) => {
   try {
@@ -155,14 +156,15 @@ export const createProduct = async (req: Request, res: Response) => {
     } = req.body;
 
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-
     if (!files || !files.image || !files.video) {
-      return res.status(400).json({ error: 'Image and video files are required.' });
+      return res.status(400).json({ error: "Image and video files are required." });
     }
 
-    const imagePaths = files.image.map(f => f.path);
-    const videoPaths = files.video.map(f => f.path);
+    // 🔹 Upload to S3
+    const imageUrls = await Promise.all(files.image.map(f => uploadToS3(f)));
+    const videoUrls = await Promise.all(files.video.map(f => uploadToS3(f)));
 
+    // 🔹 Create product
     const newProduct = await Product.create({
       productID,
       productName,
@@ -173,16 +175,17 @@ export const createProduct = async (req: Request, res: Response) => {
       status,
       size,
       price,
-      image: JSON.stringify(imagePaths),
-      video: JSON.stringify(videoPaths),
+      image: JSON.stringify(imageUrls),
+      video: JSON.stringify(videoUrls),
       tel,
       description,
-      currencyID
+      currencyID,
     });
 
     res.status(201).json(newProduct);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create product', details: err });
+    console.error(err);
+    res.status(500).json({ error: "Failed to create product", details: err });
   }
 };
 

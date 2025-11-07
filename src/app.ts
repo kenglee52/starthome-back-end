@@ -12,13 +12,14 @@ import userRoutes from "./routes/user.routes";
 import incomeRoutes from "./routes/income.routes";
 import expenseRoutes from "./routes/expense.routes";
 import cors from 'cors';
+import path from "path";
 const app = express();
 
 app.use(express.json());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 app.use(cors({origin:'*'}));
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, '../temp_uploads')));
 
 
 app.use("/api/provinces", provinceRoutes);
