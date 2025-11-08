@@ -124,15 +124,18 @@ export const createProduct = async (req: Request, res: Response) => {
     } = req.body;
 
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-    if (!files?.image?.length && !files?.video?.length)
-      return res.status(400).json({ message: "Image and video are required" });
 
-    const imageUrls = await Promise.all(
-      (files.image || []).map((f) => uploadToS3(f))
-    );
-    const videoUrls = await Promise.all(
-      (files.video || []).map((f) => uploadToS3(f))
-    );
+    if (!files || (!files.image && !files.video)) {
+      return res.status(400).json({ error: "Image and/or video files required." });
+    }
+
+    const imageUrls = files.image
+      ? await Promise.all(files.image.map((f) => uploadToS3(f)))
+      : [];
+
+    const videoUrls = files.video
+      ? await Promise.all(files.video.map((f) => uploadToS3(f)))
+      : [];
 
     const newProduct = await Product.create({
       productID,
@@ -144,17 +147,17 @@ export const createProduct = async (req: Request, res: Response) => {
       status,
       size,
       price,
+      image: JSON.stringify(imageUrls),
+      video: JSON.stringify(videoUrls),
       tel,
       description,
       currencyID,
-      image: JSON.stringify(imageUrls),
-      video: JSON.stringify(videoUrls),
     });
 
     res.status(201).json(newProduct);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to create product", error: err });
+    console.error("❌ Create product error:", err);
+    res.status(500).json({ error: "Failed to create product", details: err });
   }
 };
 
@@ -163,55 +166,54 @@ export const createProduct = async (req: Request, res: Response) => {
 --------------------------------------------- */
 export const updateProduct = async (req: Request, res: Response) => {
   try {
-    const {
-      productName,
-      ownerID,
-      productTypeID,
-      village,
-      districtID,
-      status,
-      size,
-      price,
-      tel,
-      description,
-      currencyID,
-    } = req.body;
+    const { productID } = req.params;
+    const product = await Product.findOne({ where: { productID } });
 
-    const product = await Product.findByPk(req.params.productID);
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    if (!product) return res.status(404).json({ error: "Product not found" });
 
-    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    // ຮັບ files ຈາກ multer
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
 
-    let images = parseMaybeArray(product.image);
-    let videos = parseMaybeArray(product.video);
+    // upload รูป/วิดีโอใหม่ແລ້ວ filter undefined
+    const newImages: string[] = files?.image
+      ? (await Promise.all(files.image.map(f => uploadToS3(f)))).filter((url): url is string => !!url)
+      : [];
 
-    if (files?.image?.length)
-      images = [...images, ...(await Promise.all(files.image.map(uploadToS3)))];
-    if (files?.video?.length)
-      videos = [...videos, ...(await Promise.all(files.video.map(uploadToS3)))];
+    const newVideos: string[] = files?.video
+      ? (await Promise.all(files.video.map(f => uploadToS3(f)))).filter((url): url is string => !!url)
+      : [];
 
+    // ຮູບ/ວິດີໂອເກົ່າ
+    const oldImages: string[] = typeof product.image === "string"
+      ? JSON.parse(product.image || "[]")
+      : Array.isArray(product.image)
+        ? product.image
+        : [];
+
+    const oldVideos: string[] = typeof product.video === "string"
+      ? JSON.parse(product.video || "[]")
+      : Array.isArray(product.video)
+        ? product.video
+        : [];
+
+    // merge เก่า + ใหม่
+    const imageList = oldImages.concat(newImages);
+    const videoList = oldVideos.concat(newVideos);
+
+    // update database
     await product.update({
-      productName,
-      ownerID,
-      productTypeID,
-      village,
-      districtID,
-      status,
-      size,
-      price,
-      tel,
-      description,
-      currencyID,
-      image: JSON.stringify(images),
-      video: JSON.stringify(videos),
+      ...req.body,
+      image: JSON.stringify(imageList),
+      video: JSON.stringify(videoList),
     });
 
-    res.status(200).json({ message: "Update success", product });
+    res.status(200).json({ message: "Product updated successfully", product });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Update failed", error: err });
+    console.error("❌ Update product error:", err);
+    res.status(500).json({ error: "Failed to update product", details: err });
   }
 };
+
 
 /* ---------------------------------------------
    📌 6. Delete Product
