@@ -161,9 +161,7 @@ export const createProduct = async (req: Request, res: Response) => {
   }
 };
 
-/* ---------------------------------------------
-   📌 5. Update Product (Upload new → S3)
---------------------------------------------- */
+// 🔹 Update Product (ສໍາລັບແກ້ໄຂສິນຄ້າ)
 export const updateProduct = async (req: Request, res: Response) => {
   try {
     const { productID } = req.params;
