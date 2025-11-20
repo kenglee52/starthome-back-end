@@ -157,8 +157,9 @@ export const createProduct = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Image and video files are required.' });
     }
 
-    const imagePaths = files.image.map(f => f.path);
-    const videoPaths = files.video.map(f => f.path);
+   const imageUrls = files.image.map(f => f.path); // Cloudinary returns URL in f.path
+const videoUrls = files.video.map(f => f.path);
+
 
     const newProduct = await Product.create({
       productID,
@@ -170,8 +171,8 @@ export const createProduct = async (req: Request, res: Response) => {
       status,
       size,
       price,
-      image: JSON.stringify(imagePaths),
-      video: JSON.stringify(videoPaths),
+      image: JSON.stringify(imageUrls),
+      video: JSON.stringify(videoUrls),
       tel,
       description,
       currencyID

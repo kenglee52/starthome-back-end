@@ -1,21 +1,13 @@
-import multer from 'multer';
-import path from 'path';
+import multer from "multer";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import cloudinary from "./claudinary";
 
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    if (file.fieldname === 'image') {
-      cb(null, 'uploads/images');
-    } else if (file.fieldname === 'video') {
-      cb(null, 'uploads/videos');
-    } else {
-      cb(null, 'uploads/others'); 
-    }
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, Date.now() + '-' + file.fieldname + ext);
-  },
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: (req, file) => ({
+    folder: file.fieldname === "image" ? "products/images" : "products/videos",
+    resource_type: file.fieldname === "video" ? "video" : "image",
+  }),
 });
 
 const upload = multer({ storage });
