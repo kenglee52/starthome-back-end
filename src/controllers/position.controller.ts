@@ -10,3 +10,19 @@ export const getPositions = async(req:Request, res:Response)=>{
          res.status(500).send({message: 'Server error'});
    }
 }
+
+export const createPosition = async(req:Request, res:Response)=>{
+      const {positionName} = req.body;
+   try {
+         const results = await Position.create({
+            positionName
+         });
+         res.status(200).json({
+            message: "Create success",
+            data : results
+         });
+   } catch (error) {
+         console.error(error);
+         res.status(500).send({message: 'Server error'});
+   }
+}
