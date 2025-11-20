@@ -11,6 +11,7 @@ import employeeRoutes from "./routes/employee.routes";
 import userRoutes from "./routes/user.routes";
 import incomeRoutes from "./routes/income.routes";
 import expenseRoutes from "./routes/expense.routes";
+import currencyRoutes from "./routes/currency.routes";
 import cors from 'cors';
 import path from "path";
 const app = express();
@@ -33,6 +34,7 @@ app.use("/api/employees", employeeRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/incomes", incomeRoutes);
 app.use("/api/expense", expenseRoutes);
+app.use("/api/currencies", currencyRoutes);
 app.get("/", (req, res) => res.send("API is running 🚀"));
 
 
