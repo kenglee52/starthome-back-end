@@ -65,7 +65,9 @@ export const createEmployee = async (req: Request, res: Response) => {
     res.status(200).send({ message: "Success" });
   } catch (error) {
     console.error(error);
-    res.status(500).send({ message: "Server error" });
+    res.status(500).send({ message: "Server error" ,
+      showError: error
+    });
   }
 };
 
